@@ -35,3 +35,8 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+.outputs
+.terraform.lock.hcl
+test copy.sh
+test.sh
+appsync.http
