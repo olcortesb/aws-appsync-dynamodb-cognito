@@ -1,19 +1,21 @@
 # AppSync + DynamoDB + Cognito (Terraform)
 
-API GraphQL con AWS AppSync que persiste directamente en DynamoDB, autenticada con Cognito User Pools.
+GraphQL API with AWS AppSync that persists directly to DynamoDB, authenticated with Cognito User Pools.
 
-## Arquitectura
+## Architecture
 
 ```
 Client → Cognito Auth → AppSync (GraphQL) → DynamoDB
 ```
 
-## Recursos creados
+![AppSync + DynamoDB + Cognito Architecture](images/appsync_dynamodb_cognito_architecture.png)
 
-- **Cognito User Pool + Client** — autenticación de usuarios
-- **AppSync GraphQL API** — endpoint GraphQL con auth Cognito
-- **DynamoDB Table** — almacenamiento de items (PAY_PER_REQUEST)
-- **IAM Role** — permisos AppSync → DynamoDB
+## Resources created
+
+- **Cognito User Pool + Client** — user authentication
+- **AppSync GraphQL API** — GraphQL endpoint with Cognito auth
+- **DynamoDB Table** — item storage (PAY_PER_REQUEST)
+- **IAM Role** — AppSync → DynamoDB permissions
 
 ## Deploy
 
@@ -23,9 +25,9 @@ terraform plan
 terraform apply
 ```
 
-## Uso
+## Usage
 
-### 1. Crear usuario en Cognito
+### 1. Create a Cognito user
 
 ```bash
 aws cognito-idp sign-up \
@@ -38,7 +40,7 @@ aws cognito-idp admin-confirm-sign-up \
   --username user@example.com
 ```
 
-### 2. Obtener token
+### 2. Get token
 
 ```bash
 aws cognito-idp initiate-auth \
@@ -47,14 +49,14 @@ aws cognito-idp initiate-auth \
   --auth-parameters USERNAME=user@example.com,PASSWORD=MyPass123
 ```
 
-Usa el `IdToken` del response como header `Authorization` en las requests a AppSync.
+Use the `IdToken` from the response as the `Authorization` header in AppSync requests.
 
-### 3. Queries GraphQL
+### 3. GraphQL Queries
 
-**Crear item:**
+**Create item:**
 ```graphql
 mutation {
-  createItem(input: { title: "Mi primer post", content: "Contenido del post" }) {
+  createItem(input: { title: "My first post", content: "Post content" }) {
     id
     title
     content
@@ -63,7 +65,7 @@ mutation {
 }
 ```
 
-**Obtener item por ID:**
+**Get item by ID:**
 ```graphql
 query {
   getItem(id: "abc-123") {
@@ -75,7 +77,7 @@ query {
 }
 ```
 
-**Listar todos:**
+**List all:**
 ```graphql
 query {
   listItems {
@@ -87,29 +89,29 @@ query {
 }
 ```
 
-## Ejemplo rápido con curl
+## Quick curl example
 
 ```bash
-# 1. Obtener token
+# 1. Get token
 TOKEN=$(aws cognito-idp initiate-auth \
   --client-id <cognito_client_id> \
   --auth-flow USER_PASSWORD_AUTH \
   --auth-parameters USERNAME=user@example.com,PASSWORD=MyPass123 \
   --query 'AuthenticationResult.IdToken' --output text)
 
-# 2. Guardar temperatura
+# 2. Save temperature
 curl -s -X POST <appsync_graphql_url> \
   -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"query": "mutation { createItem(input: { title: \"Temperatura\", content: \"23.5°C\" }) { id title content createdAt } }"}'
+  -d '{"query": "mutation { createItem(input: { title: \"Temperature\", content: \"23.5°C\" }) { id title content createdAt } }"}'
 
-# 3. Obtener por ID (usar el id del response anterior)
+# 3. Get by ID (use the id from the previous response)
 curl -s -X POST <appsync_graphql_url> \
   -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"query": "query { getItem(id: \"<id>\") { id title content createdAt } }"}'
 
-# 4. Listar todos los items
+# 4. List all items
 curl -s -X POST <appsync_graphql_url> \
   -H "Authorization: $TOKEN" \
   -H "Content-Type: application/json" \
